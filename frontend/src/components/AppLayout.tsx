@@ -22,8 +22,9 @@ const NAV = [
   { key: '/submit',   icon: <UploadOutlined />,       label: '提交报销' },
   { key: '/batch',    icon: <InboxOutlined />,         label: '批量上传' },
   { key: '/my',       icon: <AppstoreOutlined />,      label: '我的申请' },
-  { key: '/pending',  icon: <CheckSquareOutlined />,   label: '待审批' },
-  { key: '/reports',  icon: <BarChartOutlined />,      label: '统计报表' },
+  { key: '/pending',          icon: <CheckSquareOutlined />,   label: '待审批' },
+  { key: '/approval-history', icon: <HistoryOutlined />,       label: '已审批' },
+  { key: '/reports',          icon: <BarChartOutlined />,      label: '统计报表' },
   { key: '/chat',     icon: <RobotOutlined />,         label: '智能问答' },
 ]
 
