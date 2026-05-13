@@ -106,24 +106,64 @@ def reject_claim(claim_id: int, req: RejectRequest,
 @router.get("/my", summary="我的报销申请列表")
 def my_claims(db: Session = Depends(get_db),
               current_user: User = Depends(get_current_user)):
+    from api.models.invoice import Invoice
     claims = db.query(ExpenseClaim).filter(
         ExpenseClaim.user_id == current_user.id
     ).order_by(ExpenseClaim.id.desc()).all()
-    return [{"id": c.id, "status": c.status, "description": c.description,
-             "submitted_at": c.submitted_at} for c in claims]
+    result = []
+    for c in claims:
+        inv = db.query(Invoice).filter(Invoice.id == c.invoice_id).first()
+        result.append({
+            "id": c.id, "status": c.status, "description": c.description,
+            "submitted_at": c.submitted_at, "invoice_id": c.invoice_id,
+            "vendor": inv.vendor if inv else None,
+            "total": inv.total if inv else None,
+            "category": inv.category if inv else None,
+            "invoice_date": str(inv.invoice_date) if inv and inv.invoice_date else None,
+        })
+    return result
 
 
 @router.get("/pending", summary="待审批列表（主管/财务用）")
 def pending_claims(db: Session = Depends(get_db),
                    current_user: User = Depends(get_current_user)):
+    from api.models.invoice import Invoice
     if current_user.role not in (UserRole.manager, UserRole.finance, UserRole.admin):
         raise HTTPException(status_code=403, detail="无权查看")
-    status_filter = (ClaimStatus.pending if current_user.role == UserRole.manager
-                     else ClaimStatus.manager_approved)
+    if current_user.role == UserRole.manager:
+        status_filter = ClaimStatus.pending
+    elif current_user.role == UserRole.finance:
+        status_filter = ClaimStatus.manager_approved
+    else:
+        # admin 看所有待审批
+        claims = db.query(ExpenseClaim).filter(
+            ExpenseClaim.status.in_([ClaimStatus.pending, ClaimStatus.manager_approved])
+        ).order_by(ExpenseClaim.submitted_at).all()
+        return _enrich_claims(claims, db)
+
     claims = db.query(ExpenseClaim).filter(
         ExpenseClaim.status == status_filter
     ).order_by(ExpenseClaim.submitted_at).all()
-    return claims
+    return _enrich_claims(claims, db)
+
+
+def _enrich_claims(claims, db):
+    """给 claim 列表附加发票字段"""
+    from api.models.invoice import Invoice
+    result = []
+    for c in claims:
+        inv = db.query(Invoice).filter(Invoice.id == c.invoice_id).first()
+        result.append({
+            "id": c.id, "user_id": c.user_id, "invoice_id": c.invoice_id,
+            "status": c.status, "description": c.description,
+            "submitted_at": c.submitted_at,
+            "vendor": inv.vendor if inv else None,
+            "total": inv.total if inv else None,
+            "category": inv.category if inv else None,
+            "invoice_date": str(inv.invoice_date) if inv and inv.invoice_date else None,
+            "invoice_type": inv.invoice_type if inv else None,
+        })
+    return result
 
 
 @router.get("/{claim_id}", summary="申请详情")
