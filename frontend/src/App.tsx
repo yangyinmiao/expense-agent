@@ -12,6 +12,7 @@ import MyClaims from './pages/MyClaims'
 import Pending from './pages/Pending'
 import Reports from './pages/Reports'
 import AgentChat from './pages/AgentChat'
+import ApprovalHistory from './pages/ApprovalHistory'
 import './styles/global.css'
 
 const qc = new QueryClient()
@@ -29,6 +30,7 @@ function ProtectedRoutes() {
         <Route path="pending" element={<Pending />} />
         <Route path="reports" element={<Reports />} />
         <Route path="chat"    element={<AgentChat />} />
+        <Route path="approval-history" element={<ApprovalHistory />} />
       </Route>
     </Routes>
   )

@@ -236,3 +236,37 @@ def claim_detail(claim_id: int, db: Session = Depends(get_db),
         },
         "approvals": approvals,
     }
+
+@router.get("/approval-history", summary="我的审批历史（审批人专用）")
+def approval_history(db: Session = Depends(get_db),
+                     current_user: User = Depends(get_current_user)):
+    if current_user.role not in (UserRole.manager, UserRole.finance, UserRole.admin):
+        raise HTTPException(status_code=403, detail="仅限审批角色查看")
+
+    records = (
+        db.query(ApprovalRecord)
+        .filter(ApprovalRecord.approver_id == current_user.id)
+        .order_by(ApprovalRecord.created_at.desc())
+        .all()
+    )
+
+    result = []
+    for ap in records:
+        claim = ap.claim
+        invoice = claim.invoice if claim else None
+        applicant = claim.user if claim else None
+        result.append({
+            "approval_id": ap.id,
+            "claim_id": ap.claim_id,
+            "action": ap.action,
+            "comment": ap.comment,
+            "created_at": ap.created_at.isoformat() if ap.created_at else None,
+            "applicant_name": applicant.name if applicant else "—",
+            "vendor": invoice.vendor if invoice else "—",
+            "total": invoice.total if invoice else None,
+            "category": invoice.category if invoice else "—",
+            "invoice_date": invoice.invoice_date.isoformat() if invoice and invoice.invoice_date else None,
+            "claim_status": claim.status if claim else "—",
+            "description": claim.description if claim else "",
+        })
+    return result

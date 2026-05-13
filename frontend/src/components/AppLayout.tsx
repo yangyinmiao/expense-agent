@@ -4,7 +4,7 @@ import {
   Layout, Menu, Avatar, Dropdown, Typography, Space, Tag,
 } from 'antd'
 import {
-  UploadOutlined, AppstoreOutlined, CheckSquareOutlined,
+  UploadOutlined, AppstoreOutlined, CheckSquareOutlined, HistoryOutlined,
   BarChartOutlined, RobotOutlined, MenuFoldOutlined,
   MenuUnfoldOutlined, LogoutOutlined, UserOutlined,
   InboxOutlined,
