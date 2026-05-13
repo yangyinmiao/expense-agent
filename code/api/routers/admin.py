@@ -61,6 +61,25 @@ def department_stats(year: int, month: int, db: Session = Depends(get_db),
     return [{"部门": r[0], "申请数": r[1], "总金额": round(r[2] or 0, 2)} for r in results]
 
 
+@router.get("/stats/trend", summary="年度月度趋势（按月汇总）")
+def yearly_trend(year: int, db: Session = Depends(get_db),
+                 _: User = Depends(require_admin_or_finance)):
+    results = (
+        db.query(extract("month", ExpenseClaim.submitted_at).label("月份"),
+                 func.count(ExpenseClaim.id).label("申请数"),
+                 func.sum(Invoice.total).label("总金额"))
+        .join(Invoice, Invoice.id == ExpenseClaim.invoice_id)
+        .filter(
+            ExpenseClaim.status == ClaimStatus.finance_approved,
+            extract("year", ExpenseClaim.submitted_at) == year,
+        )
+        .group_by(extract("month", ExpenseClaim.submitted_at))
+        .order_by(extract("month", ExpenseClaim.submitted_at))
+        .all()
+    )
+    return [{"月份": int(r[0]), "申请数": r[1], "总金额": round(r[2] or 0, 2)} for r in results]
+
+
 # ---------- 规则管理 ----------
 class RuleUpdateRequest(BaseModel):
     max_amount: float
