@@ -44,7 +44,7 @@ def _extract_from_image(image_path: str) -> dict:
 {
   "发票类型": "增值税专用发票/增值税普通发票/出租车票/餐饮发票/其他",
   "发票号码": "",
-  "开票日期": "YYYY-MM-DD",
+  "开票日期": "YYYY-MM-DD（请务必仔细读取发票上的年份，不要猜测，直接从发票原文读取）",
   "供应商名称": "",
   "购买方名称": "",
   "金额（不含税）": 0.00,
@@ -53,7 +53,10 @@ def _extract_from_image(image_path: str) -> dict:
   "费用类别": "交通/餐饮/住宿/办公用品/其他",
   "备注": ""
 }
-如果某项信息无法识别，填null。只返回JSON，不要其他文字。"""
+注意：
+1. 开票日期必须从发票原文中精确读取，包括年份，格式为YYYY-MM-DD。
+2. 如果某项信息无法识别，填null。
+3. 只返回JSON，不要其他文字。"""
 
     response = client.chat.completions.create(
         model="gpt-4o",
