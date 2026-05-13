@@ -1,0 +1,9 @@
+langchain
+langchain-openai
+langchain-community
+streamlit
+python-dotenv
+pillow
+openai
+pytesseract
+pdf2image
