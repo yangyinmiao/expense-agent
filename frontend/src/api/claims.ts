@@ -15,3 +15,5 @@ export const approveClaim = (id: number, comment: string) =>
 
 export const rejectClaim = (id: number, comment: string) =>
   api.post(`/claims/${id}/reject`, { comment })
+
+export const getClaimDetail = (id: number) => api.get(`/claims/${id}/detail`)

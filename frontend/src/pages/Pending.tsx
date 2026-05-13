@@ -3,9 +3,10 @@ import {
   Table, Tag, Button, Input, Space, Popconfirm, Empty,
   Spin, message, Typography,
 } from 'antd'
-import { CheckOutlined, CloseOutlined } from '@ant-design/icons'
+import { CheckOutlined, CloseOutlined, EyeOutlined } from '@ant-design/icons'
 import { getPending, approveClaim, rejectClaim } from '../api/claims'
 import { useAuth } from '../context/AuthContext'
+import ClaimDetailModal from '../components/ClaimDetailModal'
 
 const { Text } = Typography
 
@@ -15,6 +16,7 @@ export default function Pending() {
   const [loading, setLoading] = useState(true)
   const [comments, setComments] = useState<Record<number, string>>({})
   const [acting, setActing] = useState<number | null>(null)
+  const [selectedId, setSelectedId] = useState<number | null>(null)
   const [msgApi, ctx] = message.useMessage()
 
   const load = () => {
@@ -22,7 +24,6 @@ export default function Pending() {
     getPending().then((r) => setClaims(r.data)).catch(() => msgApi.error('获取失败'))
       .finally(() => setLoading(false))
   }
-
   useEffect(() => { load() }, [])
 
   if (!['manager', 'finance', 'admin'].includes(user?.role ?? '')) {
@@ -48,22 +49,29 @@ export default function Pending() {
 
   const cols = [
     { title: '申请编号', dataIndex: 'id', render: (v: number) => `#${v}`, width: 90 },
-    { title: '申请人', dataIndex: 'user_id', width: 90 },
+    { title: '申请人', dataIndex: 'user_id', width: 80 },
     { title: '供应商', dataIndex: 'vendor', render: (v: string) => v || '—' },
-    { title: '金额', dataIndex: 'total', render: (v: number) => v ? `¥${v.toFixed(2)}` : '—', width: 110 },
+    { title: '金额', dataIndex: 'total',
+      render: (v: number) => v ? (
+        <Text strong style={{ color: '#1D4ED8' }}>¥{v.toFixed(2)}</Text>
+      ) : '—', width: 110 },
     { title: '类别', dataIndex: 'category', render: (v: string) => v ? <Tag>{v}</Tag> : '—', width: 100 },
     { title: '发票日期', dataIndex: 'invoice_date', render: (v: string) => v || '—', width: 110 },
     { title: '说明', dataIndex: 'description', render: (v: string) => v || '—' },
     {
-      title: '审批操作',
-      width: 320,
+      title: '操作', width: 360,
       render: (_: any, record: any) => (
-        <Space>
+        <Space size={4} onClick={(e) => e.stopPropagation()}>
+          <Button
+            size="small" icon={<EyeOutlined />}
+            onClick={() => setSelectedId(record.id)}
+            style={{ color: '#1D4ED8', borderColor: '#1D4ED8' }}
+          >详情</Button>
           <Input
-            size="small" placeholder="备注（可选）"
+            size="small" placeholder="审批备注"
             value={comments[record.id] ?? ''}
             onChange={(e) => setComments((p) => ({ ...p, [record.id]: e.target.value }))}
-            style={{ width: 140 }}
+            style={{ width: 110 }}
           />
           <Popconfirm title="确认通过此申请？"
             onConfirm={() => act(record.id, 'approve')} okText="确认" cancelText="取消">
@@ -84,7 +92,7 @@ export default function Pending() {
     <div className="page-wrapper">
       {ctx}
       <div className="page-title">✅ 待审批列表</div>
-      <div className="page-subtitle">审核员工提交的报销申请</div>
+      <div className="page-subtitle">点击「详情」可查看发票原件，填写备注后点击通过/驳回</div>
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: 48 }}><Spin size="large" /></div>
@@ -100,9 +108,17 @@ export default function Pending() {
             rowKey="id"
             size="middle"
             pagination={{ pageSize: 15, showSizeChanger: false }}
+            onRow={(record) => ({
+              style: { cursor: 'pointer' },
+            })}
           />
         </div>
       )}
+
+      <ClaimDetailModal
+        claimId={selectedId}
+        onClose={() => setSelectedId(null)}
+      />
     </div>
   )
 }

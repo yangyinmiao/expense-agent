@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
-import {
-  Row, Col, Card, Statistic, Table, Tag, Empty, Spin, message,
-} from 'antd'
+import { Row, Col, Card, Statistic, Table, Tag, Empty, Spin, message, Typography } from 'antd'
+import { EyeOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
 import { getMyClaims } from '../api/claims'
+import ClaimDetailModal from '../components/ClaimDetailModal'
+
+const { Text } = Typography
 
 const STATUS_MAP: Record<string, { color: string; label: string }> = {
   draft:            { color: 'default',  label: '草稿' },
@@ -17,6 +19,7 @@ const STATUS_MAP: Record<string, { color: string; label: string }> = {
 export default function MyClaims() {
   const [claims, setClaims] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedId, setSelectedId] = useState<number | null>(null)
   const [msgApi, ctx] = message.useMessage()
 
   useEffect(() => {
@@ -35,23 +38,34 @@ export default function MyClaims() {
     { title: '供应商', dataIndex: 'vendor', render: (v: string) => v || '—' },
     { title: '金额', dataIndex: 'total', render: (v: number) => v ? `¥${v.toFixed(2)}` : '—', width: 110 },
     { title: '类别', dataIndex: 'category', render: (v: string) => v || '—', width: 100 },
-    { title: '状态', dataIndex: 'status', width: 110,
+    {
+      title: '状态', dataIndex: 'status', width: 110,
       render: (v: string) => {
         const s = STATUS_MAP[v] ?? { color: 'default', label: v }
         return <Tag color={s.color}>{s.label}</Tag>
       },
     },
     { title: '提交时间', dataIndex: 'submitted_at',
-      render: (v: string) => v ? dayjs(v).format('YYYY-MM-DD') : '—', width: 120,
-    },
+      render: (v: string) => v ? dayjs(v).format('YYYY-MM-DD') : '—', width: 120 },
     { title: '说明', dataIndex: 'description', render: (v: string) => v || '—' },
+    {
+      title: '操作', width: 80, align: 'center' as const,
+      render: (_: any, record: any) => (
+        <span
+          onClick={() => setSelectedId(record.id)}
+          style={{ color: '#1D4ED8', cursor: 'pointer', fontSize: 13 }}
+        >
+          <EyeOutlined /> 详情
+        </span>
+      ),
+    },
   ]
 
   return (
     <div className="page-wrapper">
       {ctx}
       <div className="page-title">📋 我的报销申请</div>
-      <div className="page-subtitle">查看所有报销申请的状态与进度</div>
+      <div className="page-subtitle">查看所有报销申请的状态与进度，点击「详情」可查看发票原件及审批记录</div>
 
       <Row gutter={16} style={{ marginBottom: 20 }}>
         {[
@@ -83,9 +97,19 @@ export default function MyClaims() {
             rowKey="id"
             size="middle"
             pagination={{ pageSize: 15, showSizeChanger: false }}
+            onRow={(record) => ({
+              onClick: () => setSelectedId(record.id),
+              style: { cursor: 'pointer' },
+            })}
+            rowClassName={() => 'clickable-row'}
           />
         </div>
       )}
+
+      <ClaimDetailModal
+        claimId={selectedId}
+        onClose={() => setSelectedId(null)}
+      />
     </div>
   )
 }

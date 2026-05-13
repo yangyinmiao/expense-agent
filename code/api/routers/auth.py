@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+import bcrypt as _bcrypt
 from passlib.context import CryptContext
 from jose import jwt, JWTError
 from pydantic import BaseModel
@@ -12,6 +13,17 @@ from config.settings import settings
 
 router = APIRouter(prefix="/auth", tags=["认证"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def _verify_password(plain: str, hashed: str) -> bool:
+    """直接用 bcrypt 库验证，绕过 passlib 的 bcrypt 4.x 兼容问题"""
+    try:
+        return _bcrypt.checkpw(plain.encode(), hashed.encode())
+    except Exception:
+        return False
+
+def _hash_password(plain: str) -> str:
+    return _bcrypt.hashpw(plain.encode(), _bcrypt.gensalt()).decode()
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
@@ -50,7 +62,7 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="邮箱已注册")
     user = User(
         name=req.name, email=req.email, department=req.department,
-        role=req.role, hashed_password=pwd_context.hash(req.password),
+        role=req.role, hashed_password=_hash_password(req.password),
     )
     db.add(user)
     db.commit()
@@ -64,7 +76,7 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
     user = db.query(User).filter(User.email == form.username).first()
     if not user:
         user = db.query(User).filter(User.name == form.username).first()
-    if not user or not pwd_context.verify(form.password, user.hashed_password):
+    if not user or not _verify_password(form.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="用户名/邮箱或密码错误")
     token = create_access_token({"sub": str(user.id), "role": user.role})
     return {"access_token": token, "token_type": "bearer",
