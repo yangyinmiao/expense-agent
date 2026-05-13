@@ -40,7 +40,7 @@ def login_page():
 
     with tab_login:
         with st.form("login_form"):
-            email = st.text_input("邮箱")
+            email = st.text_input("用户名 / 邮箱")
             password = st.text_input("密码", type="password")
             submitted = st.form_submit_button("登录", type="primary")
         if submitted:

@@ -58,11 +58,14 @@ def register(req: RegisterRequest, db: Session = Depends(get_db)):
     return {"id": user.id, "name": user.name, "email": user.email, "role": user.role}
 
 
-@router.post("/login", summary="登录")
+@router.post("/login", summary="登录（支持邮箱或用户名）")
 def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    # 先按邮箱找，找不到再按用户名找
     user = db.query(User).filter(User.email == form.username).first()
+    if not user:
+        user = db.query(User).filter(User.name == form.username).first()
     if not user or not pwd_context.verify(form.password, user.hashed_password):
-        raise HTTPException(status_code=401, detail="邮箱或密码错误")
+        raise HTTPException(status_code=401, detail="用户名/邮箱或密码错误")
     token = create_access_token({"sub": str(user.id), "role": user.role})
     return {"access_token": token, "token_type": "bearer",
             "user": {"id": user.id, "name": user.name, "role": user.role}}
