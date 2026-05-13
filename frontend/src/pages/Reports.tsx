@@ -4,23 +4,14 @@ import {
 } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
 import dayjs, { Dayjs } from 'dayjs'
+import {
+  BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from 'recharts'
 import { getMonthlyStats, getDeptStats, getTrendStats } from '../api/admin'
 import { useAuth } from '../context/AuthContext'
 
-// lazy-load plotly to keep initial bundle small
-let Plotly: any
-const getPlotly = async () => {
-  if (!Plotly) Plotly = (await import('react-plotly.js')).default
-  return Plotly
-}
-
-const BLUES = ['#1D4ED8','#2563EB','#3B82F6','#60A5FA','#93C5FD','#BFDBFE']
-
-function PlotlyChart({ data, layout }: { data: any[]; layout: any }) {
-  const [P, setP] = useState<any>(null)
-  if (!P) { getPlotly().then(setP); return <Spin /> }
-  return <P data={data} layout={{ ...layout, paper_bgcolor: '#fff', plot_bgcolor: '#fff', font: { family: 'PingFang SC' } }} config={{ displayModeBar: false }} style={{ width: '100%', height: 280 }} />
-}
+const BLUES = ['#1D4ED8', '#2563EB', '#3B82F6', '#60A5FA', '#93C5FD', '#BFDBFE']
 
 export default function Reports() {
   const { user } = useAuth()
@@ -91,50 +82,86 @@ export default function Reports() {
           </Row>
 
           <Row gutter={16}>
+            {/* 各类别金额柱状图 */}
             <Col xs={24} md={12}>
               <div className="card-white">
+                <div style={{ fontWeight: 600, marginBottom: 12 }}>{stats.y}/{stats.m} 各类别金额</div>
                 {stats.cat.length > 0 ? (
-                  <PlotlyChart
-                    data={[{ type: 'bar', x: stats.cat.map((r: any) => r['类别'] ?? r[0]), y: stats.cat.map((r: any) => r['总金额'] ?? r[2]), marker: { color: BLUES } }]}
-                    layout={{ title: { text: `${stats.y}/${stats.m} 各类别金额`, font: { size: 14 } }, margin: { t: 36, b: 40, l: 50, r: 10 } }}
-                  />
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={stats.cat} margin={{ top: 8, right: 16, bottom: 8, left: 16 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="类别" />
+                      <YAxis />
+                      <Tooltip formatter={(v: any) => `¥${Number(v).toFixed(2)}`} />
+                      <Bar dataKey="总金额" name="金额">
+                        {stats.cat.map((_: any, i: number) => <Cell key={i} fill={BLUES[i % BLUES.length]} />)}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 ) : <Empty description="暂无数据" />}
               </div>
             </Col>
+
+            {/* 类别占比饼图 */}
             <Col xs={24} md={12}>
               <div className="card-white">
+                <div style={{ fontWeight: 600, marginBottom: 12 }}>类别占比</div>
                 {stats.cat.length > 0 ? (
-                  <PlotlyChart
-                    data={[{ type: 'pie', labels: stats.cat.map((r: any) => r['类别'] ?? r[0]), values: stats.cat.map((r: any) => r['总金额'] ?? r[2]), hole: 0.45, marker: { colors: BLUES } }]}
-                    layout={{ title: { text: '类别占比', font: { size: 14 } }, margin: { t: 36, b: 10, l: 10, r: 10 }, legend: { orientation: 'v' } }}
-                  />
+                  <ResponsiveContainer width="100%" height={260}>
+                    <PieChart>
+                      <Pie
+                        data={stats.cat}
+                        dataKey="总金额"
+                        nameKey="类别"
+                        cx="50%" cy="50%"
+                        outerRadius={90}
+                        innerRadius={45}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {stats.cat.map((_: any, i: number) => <Cell key={i} fill={BLUES[i % BLUES.length]} />)}
+                      </Pie>
+                      <Tooltip formatter={(v: any) => `¥${Number(v).toFixed(2)}`} />
+                    </PieChart>
+                  </ResponsiveContainer>
                 ) : <Empty description="暂无数据" />}
               </div>
             </Col>
+
+            {/* 部门对比柱状图 */}
             <Col xs={24} md={12}>
               <div className="card-white">
+                <div style={{ fontWeight: 600, marginBottom: 12 }}>部门报销对比</div>
                 {stats.dept.length > 0 ? (
-                  <PlotlyChart
-                    data={[{ type: 'bar', x: stats.dept.map((r: any) => r['部门'] ?? r[0]), y: stats.dept.map((r: any) => r['总金额'] ?? r[2]), marker: { color: BLUES } }]}
-                    layout={{ title: { text: '部门报销对比', font: { size: 14 } }, margin: { t: 36, b: 40, l: 50, r: 10 } }}
-                  />
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={stats.dept} margin={{ top: 8, right: 16, bottom: 8, left: 16 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="部门" />
+                      <YAxis />
+                      <Tooltip formatter={(v: any) => `¥${Number(v).toFixed(2)}`} />
+                      <Bar dataKey="总金额" name="金额">
+                        {stats.dept.map((_: any, i: number) => <Cell key={i} fill={BLUES[i % BLUES.length]} />)}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
                 ) : <Empty description="暂无数据" />}
               </div>
             </Col>
+
+            {/* 月度趋势折线图 */}
             <Col xs={24} md={12}>
               <div className="card-white">
+                <div style={{ fontWeight: 600, marginBottom: 12 }}>{stats.y}年月度趋势</div>
                 {stats.trend.length > 0 ? (
-                  <PlotlyChart
-                    data={[{
-                      type: 'scatter', mode: 'lines+markers',
-                      x: stats.trend.map((r: any) => r['月份'] ?? r[0]),
-                      y: stats.trend.map((r: any) => r['总金额'] ?? r[2]),
-                      fill: 'tozeroy', fillcolor: 'rgba(29,78,216,.07)',
-                      line: { color: '#1D4ED8', width: 2.5 },
-                      marker: { color: '#1D4ED8', size: 7 },
-                    }]}
-                    layout={{ title: { text: `${stats.y}年月度趋势`, font: { size: 14 } }, margin: { t: 36, b: 40, l: 50, r: 10 }, xaxis: { title: '月份' }, yaxis: { title: '金额（元）' } }}
-                  />
+                  <ResponsiveContainer width="100%" height={260}>
+                    <LineChart data={stats.trend} margin={{ top: 8, right: 16, bottom: 8, left: 16 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="月份" tickFormatter={(v) => `${v}月`} />
+                      <YAxis />
+                      <Tooltip formatter={(v: any) => `¥${Number(v).toFixed(2)}`} labelFormatter={(v) => `${v}月`} />
+                      <Legend />
+                      <Line type="monotone" dataKey="总金额" name="金额" stroke="#1D4ED8" strokeWidth={2.5} dot={{ r: 5 }} activeDot={{ r: 7 }} />
+                    </LineChart>
+                  </ResponsiveContainer>
                 ) : <Empty description="暂无数据" />}
               </div>
             </Col>
