@@ -16,15 +16,24 @@ class Settings:
     )
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o")
 
-    # 数据库（Phase 2 用）
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "")
+    # 数据库
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL",
+        "postgresql://expense:changeme@localhost:5432/expense_agent"
+    )
 
-    # Redis（Phase 2 用）
+    # Redis
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
-    # OSS（Phase 2 用）
-    OSS_BUCKET: str = os.getenv("OSS_BUCKET", "")
-    OSS_ENDPOINT: str = os.getenv("OSS_ENDPOINT", "")
+    # MinIO
+    MINIO_ENDPOINT: str = os.getenv("MINIO_ENDPOINT", "localhost:9000")
+    MINIO_ROOT_USER: str = os.getenv("MINIO_ROOT_USER", "minioadmin")
+    MINIO_ROOT_PASSWORD: str = os.getenv("MINIO_ROOT_PASSWORD", "minioadmin")
+    MINIO_SECURE: bool = os.getenv("MINIO_SECURE", "false").lower() == "true"
+
+    # JWT
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "dev-secret-change-in-prod")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
 
 
 settings = Settings()
