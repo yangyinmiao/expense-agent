@@ -182,69 +182,6 @@ def get_claim(claim_id: int, db: Session = Depends(get_db),
 @router.get("/{claim_id}/detail", summary="申请详情（含发票原件 URL + 审批记录）")
 def claim_detail(claim_id: int, db: Session = Depends(get_db),
                  current_user: User = Depends(get_current_user)):
-    claim = (
-        db.query(ExpenseClaim)
-        .filter(ExpenseClaim.id == claim_id)
-        .first()
-    )
-    if not claim:
-        raise HTTPException(status_code=404, detail="申请不存在")
-
-    # 权限：本人 or 审批角色
-    can_view = (
-        claim.user_id == current_user.id
-        or current_user.role in (UserRole.manager, UserRole.finance, UserRole.admin)
-    )
-    if not can_view:
-        raise HTTPException(status_code=403, detail="无查看权限")
-
-    # 生成发票图片 presigned URL（1 小时有效）
-    from api.services.storage_service import get_presigned_url
-    invoice = claim.invoice
-    try:
-        image_url = get_presigned_url(invoice.file_id, expires_days=1)
-    except Exception:
-        image_url = invoice.oss_url  # fallback
-
-    # 审批记录
-    approvals = []
-    for ap in sorted(claim.approvals, key=lambda x: x.created_at or 0):
-        approvals.append({
-            "approver_id": ap.approver_id,
-            "approver_name": ap.approver.name if ap.approver else "—",
-            "action": ap.action,
-            "comment": ap.comment,
-            "created_at": ap.created_at.isoformat() if ap.created_at else None,
-        })
-
-    return {
-        "claim": {
-            "id": claim.id,
-            "status": claim.status,
-            "description": claim.description,
-            "submitted_at": claim.submitted_at.isoformat() if claim.submitted_at else None,
-            "user_id": claim.user_id,
-            "user_name": claim.user.name if claim.user else "—",
-        },
-        "invoice": {
-            "id": invoice.id,
-            "invoice_type": invoice.invoice_type,
-            "invoice_number": invoice.invoice_number,
-            "vendor": invoice.vendor,
-            "invoice_date": invoice.invoice_date.isoformat() if invoice.invoice_date else None,
-            "amount": invoice.amount,
-            "tax": invoice.tax,
-            "total": invoice.total,
-            "category": invoice.category,
-            "raw_json": invoice.raw_json,
-            "image_url": image_url,
-        },
-        "approvals": approvals,
-    }
-
-@router.get("/{claim_id}/detail", summary="申请详情（含发票原件 URL + 审批记录）")
-def claim_detail(claim_id: int, db: Session = Depends(get_db),
-                 current_user: User = Depends(get_current_user)):
     from api.services.storage_service import get_presigned_url
     claim = db.query(ExpenseClaim).filter(ExpenseClaim.id == claim_id).first()
     if not claim:
@@ -259,9 +196,10 @@ def claim_detail(claim_id: int, db: Session = Depends(get_db),
 
     invoice = claim.invoice
     try:
-        image_url = get_presigned_url(invoice.file_id, expires_days=1)
+        raw_url = get_presigned_url(invoice.file_id, expires_days=1)
+        image_url = raw_url.replace("http://localhost:9000", "/minio")
     except Exception:
-        image_url = invoice.oss_url
+        image_url = (invoice.oss_url or "").replace("http://localhost:9000", "/minio")
 
     approvals = []
     for ap in sorted(claim.approvals, key=lambda x: x.created_at or 0):
@@ -294,6 +232,7 @@ def claim_detail(claim_id: int, db: Session = Depends(get_db),
             "category": invoice.category,
             "raw_json": invoice.raw_json,
             "image_url": image_url,
+            "file_id": invoice.file_id,
         },
         "approvals": approvals,
     }
