@@ -1,14 +1,17 @@
 """
 财务报销 Agent - Streamlit Web 界面
 """
+import sys
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 import streamlit as st
 import tempfile
-import os
-import json
 from pathlib import Path
 
-from extractor import extract_invoice_info
-from validator import validate_expense
+from core.extractor import extract_invoice_info
+from core.validator import validate_expense
+from config.settings import settings
 
 # ---- 页面配置 ----
 st.set_page_config(
@@ -23,16 +26,20 @@ st.caption("上传发票图片或PDF，自动识别信息并校验是否符合�
 # ---- 侧边栏：API配置 ----
 with st.sidebar:
     st.header("⚙️ 配置")
-    api_key = st.text_input("OpenAI API Key", type="password", help="输入你的API Key")
+    api_key = st.text_input("OpenAI API Key", type="password",
+                            value=settings.OPENAI_API_KEY,
+                            help="输入你的API Key")
     base_url = st.text_input(
         "API Base URL（可选）",
-        placeholder="https://goods.fatrabbits.shop:12788/v1",
-        help="使用国内中转时填写",
+        value=settings.OPENAI_BASE_URL,
+        help="使用自定义端点时填写",
     )
     if api_key:
         os.environ["OPENAI_API_KEY"] = api_key
+        settings.OPENAI_API_KEY = api_key
     if base_url:
         os.environ["OPENAI_BASE_URL"] = base_url
+        settings.OPENAI_BASE_URL = base_url
 
     st.divider()
     st.markdown("**报销规则**")

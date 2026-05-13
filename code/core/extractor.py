@@ -2,17 +2,14 @@
 发票信息提取模块
 支持：图片（JPG/PNG）、PDF
 """
-import os
 import base64
 from pathlib import Path
 from openai import OpenAI
-from dotenv import load_dotenv
-
-load_dotenv()
+from config.settings import settings
 
 client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
-    base_url=os.getenv("OPENAI_BASE_URL", "https://goods.fatrabbits.shop:12788/v1"),
+    api_key=settings.OPENAI_API_KEY,
+    base_url=settings.OPENAI_BASE_URL,
 )
 
 
