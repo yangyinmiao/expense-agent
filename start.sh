@@ -37,13 +37,13 @@ echo ""
 echo "▶ [2/3] 执行数据库迁移..."
 source "$VENV/bin/activate"
 cd "$PROJECT_DIR"
-alembic upgrade head
+alembic -c "$PROJECT_DIR/code/alembic.ini" upgrade head
 echo "✅ 数据库迁移完成"
 
 # 4. 启动 FastAPI 后端（后台）
 echo ""
 echo "▶ [3/3] 启动后端 FastAPI（端口 8000）..."
-uvicorn code.main:app --reload --port 8000 &
+uvicorn code.api.main:app --reload --port 8000 &
 BACKEND_PID=$!
 echo "✅ 后端 PID: $BACKEND_PID"
 
