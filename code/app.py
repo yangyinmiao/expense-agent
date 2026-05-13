@@ -35,7 +35,7 @@ html, body, [data-testid="stAppViewContainer"] {
 
 /* ---- 隐藏默认 Streamlit 元素 ---- */
 #MainMenu, footer, header { visibility: hidden; }
-[data-testid="stToolbar"] { display: none; }
+/* keep toolbar so sidebar expand/collapse control remains visible */
 
 /* ---- 侧边栏 ---- */
 [data-testid="stSidebar"] {
@@ -62,6 +62,20 @@ html, body, [data-testid="stAppViewContainer"] {
 }
 [data-testid="stSidebar"] .stButton button:hover {
     background: rgba(255,255,255,0.2) !important;
+}
+
+/* 当侧栏收起时，显示一个悬浮展开按钮（兼容不同 Streamlit 版本） */
+button[title="Show sidebar"], button[title="显示侧边栏"] {
+    position: fixed !important;
+    left: 12px !important;
+    top: 84px !important;
+    background: #1E4D9E !important;
+    color: #fff !important;
+    border-radius: 8px !important;
+    padding: 8px 10px !important;
+    box-shadow: 0 4px 12px rgba(30,77,158,0.18) !important;
+    border: none !important;
+    z-index: 9999 !important;
 }
 
 /* ---- 主内容区 ---- */
